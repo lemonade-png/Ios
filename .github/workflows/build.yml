@@ -1,0 +1,67 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Create Xcode Project
+        run: |
+          # Create a temporary project structure
+          mkdir -p EcoPlayer
+          mv *.swift EcoPlayer/
+          
+          # Compile the swift files into an executable
+          # Note: We are manually compiling to avoid needing an xcodeproj file.
+          mkdir -p Payload/EcoPlayer.app
+          
+          swiftc -o Payload/EcoPlayer.app/EcoPlayer \
+            -target arm64-apple-ios16.0 \
+            -sdk $(xcrun --show-sdk-path --sdk iphoneos) \
+            -F $(xcrun --show-sdk-path --sdk iphoneos)/System/Library/Frameworks \
+            EcoPlayer/*.swift
+            
+          # Create Info.plist (Required)
+          cat <<EOF > Payload/EcoPlayer.app/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>EcoPlayer</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.example.EcoPlayer</string>
+              <key>CFBundleName</key>
+              <string>EcoPlayer</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>UILaunchScreen</key>
+              <dict/>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+                  <string>UIInterfaceOrientationLandscapeLeft</string>
+                  <string>UIInterfaceOrientationLandscapeRight</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
+          
+          # Zip it into an IPA
+          zip -r EcoPlayer.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: EcoPlayer-IPA
+          path: EcoPlayer.ipa
