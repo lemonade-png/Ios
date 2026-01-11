@@ -15,10 +15,6 @@ jobs:
 
       - name: Create Xcode Project
         run: |
-          # Create a temporary project structure
-          mkdir -p EcoPlayer
-          mv *.swift EcoPlayer/
-          
           # Compile the swift files into an executable
           # Note: We are manually compiling to avoid needing an xcodeproj file.
           mkdir -p Payload/EcoPlayer.app
